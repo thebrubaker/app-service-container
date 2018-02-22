@@ -18,7 +18,9 @@ describe('Container', () => {
      */
     const app = new Container();
 
-    app.register('foo', () => () => 'bar')
+    app.register({
+      foo: () => 'bar',
+    })
 
     // We access the service by simply getting it as a prop off of app.
     const result = app.foo();
@@ -31,13 +33,7 @@ describe('Container', () => {
     const service = () => 'bar';
 
     app.register('foo', async () => {
-      const foo = await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve(service)
-        }, 100);
-      });
-
-      return foo
+      return Promise.resolve(service)
     })
 
     const foo = await app('foo');
@@ -45,16 +41,6 @@ describe('Container', () => {
     expect(foo()).toEqual('bar');
     
     done();
-  });
-
-  it('should register simple synchronous services', () => {
-    const app = new Container();
-
-    app.register({
-      foo: () => 'bar',
-    })
-
-    expect(app.foo()).toEqual('bar');
   });
 
   it('should fire callbacks when a service is resolved', async done => {
@@ -71,13 +57,13 @@ describe('Container', () => {
 
     app.resolved('foo', (container, foo) => {
       spy1();
-      expect(container).toBe(app)
+      expect(container.foo).toBe(service)
       expect(foo).toBe(service)
     })
 
     app.resolved('foo', (container, foo) => {
       spy2();
-      expect(container).toBe(app)
+      expect(container.foo).toBe(service)
       expect(foo).toBe(service)
     })
 

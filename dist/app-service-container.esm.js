@@ -28,21 +28,36 @@ module.exports = class Container {
    * @param {Container} receiver
    */
   get(target, prop, receiver) {
-    switch (prop) {
-      case 'serviceResolvers':
-      case 'resolvedServices':
-      case 'resolverCallbacks':
-      case 'register':
-      case 'isResolved':
-      case 'registerService':
-      case 'registerAsyncService':
-      case 'resolveAsyncService':
-      case 'getResolvedService':
-      case 'resolved':
-        return this[prop];
-      default:
-        return this.getResolvedService(prop);
+    if (this[prop] !== undefined) {
+      return this[prop];
     }
+
+    return this.getResolvedService(prop);
+  }
+
+  /**
+   * Sets a resolved service on the container.
+   * @param {Container} target
+   * @param {String} prop
+   * @param {Any} value
+   */
+  set(target, prop, value) {
+    this.registerService(prop, value);
+  }
+
+  /**
+   * Register a service in the container.
+   * @param {String|Object} name 
+   * @param {Function} resolver 
+   */
+  register(name, resolver) {
+    if (typeof name === 'string') {
+      return this.registerAsyncService(name, resolver)
+    }
+
+    Object.keys(name).forEach(key => {
+      this.registerService(key, name[key]);
+    });
   }
 
   /**
@@ -61,44 +76,12 @@ module.exports = class Container {
   }
 
   /**
-   * Sets a resolved service on the container.
-   * @param {Container} target
-   * @param {String} prop
-   * @param {Any} value
-   */
-  set(target, prop, value) {
-    this.resolvedServices[prop] = value;
-  }
-
-  /**
    * Determines if the service has been registered.
    * @param {String} name The name of the service to check.
    * @returns {Boolean}
    */
   isResolved(name) {
     return this.resolvedServices[name] !== undefined;
-  }
-
-  /**
-   * Register a service in the container.
-   * @param {String|Object} name 
-   * @param {Function|Promise} resolver 
-   */
-  register(name, resolver) {
-    if (typeof name !== 'string') {
-      Object.keys(name).forEach(key => {
-        this.registerService(key, name[key]);
-      });
-
-      return this;
-    }
-
-    if (Promise.resolve(resolver) == resolver) {
-      console.log('This is async');
-      return this.registerAsyncService(name, resolver)
-    }
-    
-    return this.registerService(name, resolver())
   }
 
   /**
@@ -129,8 +112,8 @@ module.exports = class Container {
    * @returns {Promise}
    */
   async resolveAsyncService(name) {
-    if (this.resolvedServices[name]) {
-      return Promise.resolve(this.resolvedServices[name]);
+    if (this.isResolved(name)) {
+      return Promise.resolve(this.getResolvedService(name));
     }
 
     const resolver = this.serviceResolvers[name];
@@ -144,9 +127,8 @@ module.exports = class Container {
     const module = await resolver();
     const service = module.default || module;
 
-    (this.resolverCallbacks[name] || []).forEach(callback => callback(this, service));
-
     this.resolvedServices[name] = service;
+    (this.resolverCallbacks[name] || []).forEach(callback => callback(this.resolvedServices, service));
 
     return service;
   }

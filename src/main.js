@@ -28,21 +28,11 @@ module.exports = class Container {
    * @param {Container} receiver
    */
   get(target, prop, receiver) {
-    switch (prop) {
-      case 'serviceResolvers':
-      case 'resolvedServices':
-      case 'resolverCallbacks':
-      case 'register':
-      case 'isResolved':
-      case 'registerService':
-      case 'registerAsyncService':
-      case 'resolveAsyncService':
-      case 'getResolvedService':
-      case 'resolved':
-        return this[prop];
-      default:
-        return this.getResolvedService(prop);
+    if (this[prop] !== undefined) {
+      return this[prop];
     }
+
+    return this.getResolvedService(prop);
   }
 
   /**
@@ -138,8 +128,7 @@ module.exports = class Container {
     const service = module.default || module;
 
     this.resolvedServices[name] = service;
-
-    (this.resolverCallbacks[name] || []).forEach(callback => callback(this, service));
+    (this.resolverCallbacks[name] || []).forEach(callback => callback(this.resolvedServices, service));
 
     return service;
   }
