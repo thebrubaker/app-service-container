@@ -145,7 +145,7 @@ module.exports = class Container {
     const module = await resolver();
     const service = module.default || module;
 
-    (this.resolverCallbacks[name] || []).forEach(callback => callback(service));
+    (this.resolverCallbacks[name] || []).forEach(callback => callback(this, service));
 
     this.resolvedServices[name] = service;
 

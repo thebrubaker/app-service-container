@@ -56,19 +56,24 @@ describe('Container', () => {
     const app = new Container();
     const spy1 = sinon.spy();
     const spy2 = sinon.spy();
+    const service = () => 'bar'
 
     app.register('foo', async () => {
-      const foo = await Promise.resolve(() => 'bar');
+      const foo = await Promise.resolve(service);
 
       return foo
     })
 
     app.resolved('foo', (container, foo) => {
       spy1();
+      expect(container).toBe(app)
+      expect(foo).toBe(service)
     })
 
     app.resolved('foo', (container, foo) => {
       spy2();
+      expect(container).toBe(app)
+      expect(foo).toBe(service)
     })
 
     expect(spy1).not.toBeCalled
