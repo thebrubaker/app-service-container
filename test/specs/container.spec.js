@@ -28,9 +28,14 @@ describe('Container', () => {
 
   it('should register an asynchronous service', async done => {
     const app = new Container();
+    const service = () => 'bar';
 
     app.register('foo', async () => {
-      const foo = await Promise.resolve(() => 'bar');
+      const foo = await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve(service)
+        }, 100);
+      });
 
       return foo
     })

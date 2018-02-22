@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1519259011068" clover="3.2.0">
-  <project timestamp="1519259011068" name="All files">
-    <metrics statements="36" coveredstatements="0" conditionals="27" coveredconditionals="0" methods="14" coveredmethods="0" elements="77" coveredelements="0" complexity="0" loc="36" ncloc="36" packages="1" files="1" classes="1">
+<coverage generated="1519260708935" clover="3.2.0">
+  <project timestamp="1519260708936" name="All files">
+    <metrics statements="37" coveredstatements="0" conditionals="27" coveredconditionals="0" methods="14" coveredmethods="0" elements="78" coveredelements="0" complexity="0" loc="37" ncloc="37" packages="1" files="1" classes="1">
       <file name="main.js" path="/Users/joel-brubaker/Code/app-service-container/src/main.js">
-        <metrics statements="36" coveredstatements="0" conditionals="27" coveredconditionals="0" methods="14" coveredmethods="0"/>
+        <metrics statements="37" coveredstatements="0" conditionals="27" coveredconditionals="0" methods="14" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="6" count="0" type="stmt"/>
         <line num="7" count="0" type="stmt"/>
@@ -24,22 +24,23 @@
         <line num="93" count="0" type="stmt"/>
         <line num="96" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="97" count="0" type="stmt"/>
-        <line num="100" count="0" type="stmt"/>
-        <line num="110" count="0" type="stmt"/>
-        <line num="120" count="0" type="stmt"/>
-        <line num="131" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="132" count="0" type="stmt"/>
-        <line num="135" count="0" type="stmt"/>
-        <line num="137" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="138" count="0" type="stmt"/>
-        <line num="143" count="0" type="stmt"/>
-        <line num="144" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="146" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="148" count="0" type="stmt"/>
-        <line num="150" count="0" type="stmt"/>
-        <line num="159" count="0" type="cond" truecount="0" falsecount="2"/>
-        <line num="160" count="0" type="stmt"/>
-        <line num="163" count="0" type="stmt"/>
+        <line num="98" count="0" type="stmt"/>
+        <line num="101" count="0" type="stmt"/>
+        <line num="111" count="0" type="stmt"/>
+        <line num="121" count="0" type="stmt"/>
+        <line num="132" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="133" count="0" type="stmt"/>
+        <line num="136" count="0" type="stmt"/>
+        <line num="138" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="139" count="0" type="stmt"/>
+        <line num="144" count="0" type="stmt"/>
+        <line num="145" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="147" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="149" count="0" type="stmt"/>
+        <line num="151" count="0" type="stmt"/>
+        <line num="160" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="161" count="0" type="stmt"/>
+        <line num="164" count="0" type="stmt"/>
       </file>
     </metrics>
   </project>

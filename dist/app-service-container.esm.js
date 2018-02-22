@@ -94,6 +94,7 @@ module.exports = class Container {
     }
 
     if (Promise.resolve(resolver) == resolver) {
+      console.log('This is async');
       return this.registerAsyncService(name, resolver)
     }
     
