@@ -1,16 +1,16 @@
-# app-service-container
+# App Service Container
 
-This package solves the problem of code-splitting large libraries in a single page application. It's a design pattern that involves a bit more structure to how services are "loaded" into your application, but once they have been registered, it becomes trivial to access them without having to think what code-split group they belong to.
+This package solves the problem of code-splitting large libraries in a single page application. It's a design pattern that involves a bit more structure for how services are "loaded" into your app, but once they have been registered, it becomes trivial to access them without having to think which webpack chunk they belong to. It will help you potentially improve your PWA scores by reducing the initial size of your app by separating your core packages from your other packages.
 
 ## Getting started
 
-Add this package to your project:
+To start using the container, add this package to your project:
 
 ```bash
 yarn add app-service-container
 ```
 
-Then create a new instance of the container:
+Then we simply create a new instance of the container like so:
 
 ```js
 import Container from 'app-service-container';
@@ -20,7 +20,7 @@ const app = new Container();
 export default app;
 ```
 
-Now we go about registering our services. Let's start with an example of a large package such as Firebase that we only want to use on our "admin" routes.
+Once we have the container, we go about registering our services. Let's start with an example of a large package such as Firebase that we only want to use in our "admin" routes.
 
 ```js
 import Container from 'app-service-container';
@@ -58,15 +58,35 @@ app('firebase').then(firebase => {
 });
 ```
 
-Once the service has been resolved, it's available statically on the app container:
+Once the service has been resolved, it's available statically from the container:
 
 ```js
 import app from './app';
 
-// alternative access to the service
 app('firebase').then(firebase => {
   // it's now simple to access
   console.log(app.firebase);
+});
+```
+
+It's a good idea to register all of your services in the container, even if they aren't split.
+
+```js
+const router = new VueRouter({
+  /* ... */
+});
+const store = new Vuex.Store({
+  /* ... */
+});
+const vue = new Vue({
+  router,
+  store,
+});
+
+app.register({
+  vue,
+  router,
+  store,
 });
 ```
 
@@ -112,8 +132,7 @@ export default function(register, resolved) {
   /**
    * Register your service into the container. This is where
    * you might declare a service to be loaded asynchronously
-   * into the container. If the second argument is a Promise,
-   * the container assumes you will resolve with the service.
+   * into the container.
    */
   register('firebase', async () => {
     const firebase = await import('firebase');

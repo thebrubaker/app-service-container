@@ -145,4 +145,18 @@ module.exports = class Container {
 
     this.resolverCallbacks[name].push(callback);
   }
+
+  /**
+   * Bootstrap a service using a callback or callbacks.
+   * 
+   * @param {Array|Function} callbacks
+   */
+  bootstrap(callbacks) {
+    if (Array.isArray(callbacks)) {
+      return callbacks.map(callback => {
+        return callback(this.register.bind(this), this.resolved.bind(this))
+      })
+    }
+    return callbacks(this.register.bind(this), this.resolved.bind(this))
+  }
 }

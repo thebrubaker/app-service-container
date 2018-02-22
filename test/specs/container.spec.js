@@ -20,7 +20,7 @@ describe('Container', () => {
 
     app.register({
       foo: () => 'bar',
-    })
+    });
 
     // We access the service by simply getting it as a prop off of app.
     const result = app.foo();
@@ -33,13 +33,13 @@ describe('Container', () => {
     const service = () => 'bar';
 
     app.register('foo', async () => {
-      return Promise.resolve(service)
-    })
+      return Promise.resolve(service);
+    });
 
     const foo = await app('foo');
 
     expect(foo()).toEqual('bar');
-    
+
     done();
   });
 
@@ -47,35 +47,56 @@ describe('Container', () => {
     const app = new Container();
     const spy1 = sinon.spy();
     const spy2 = sinon.spy();
-    const service = () => 'bar'
+    const service = () => 'bar';
 
     app.register('foo', async () => {
       const foo = await Promise.resolve(service);
 
-      return foo
-    })
+      return foo;
+    });
 
     app.resolved('foo', (container, foo) => {
       spy1();
-      expect(container.foo).toBe(service)
-      expect(foo).toBe(service)
-    })
+      expect(container.foo).toBe(service);
+      expect(foo).toBe(service);
+    });
 
     app.resolved('foo', (container, foo) => {
       spy2();
-      expect(container.foo).toBe(service)
-      expect(foo).toBe(service)
-    })
+      expect(container.foo).toBe(service);
+      expect(foo).toBe(service);
+    });
 
-    expect(spy1).not.toBeCalled
-    expect(spy2).not.toBeCalled
+    expect(spy1).not.toBeCalled;
+    expect(spy2).not.toBeCalled;
 
     const foo = await app('foo');
 
     expect(foo()).toEqual('bar');
     expect(spy1).toBeCalled;
     expect(spy2).toBeCalled;
-    
+
     done();
+  });
+
+  it('should bootstrap a service', () => {
+    const app = new Container();
+    const registered = sinon.spy();
+    const resolved = sinon.spy();
+
+    const bootstrapper = (register, resolved) => {
+      register('foo', () => {
+        registered();
+        return () => 'bar';
+      });
+      resolved('foo', () => {
+        resolved();
+      });
+    };
+
+    app.bootstrap(bootstrapper);
+
+    expect(registered).toBeCalled;
+    expect(resolved).toBeCalled;
   });
 });

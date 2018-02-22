@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1519274712015" clover="3.2.0">
-  <project timestamp="1519274712016" name="All files">
-    <metrics statements="33" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="14" coveredmethods="0" elements="63" coveredelements="0" complexity="0" loc="33" ncloc="33" packages="1" files="1" classes="1">
-      <file name="main.js" path="/Users/joel/Code/app-service-container/src/main.js">
-        <metrics statements="33" coveredstatements="0" conditionals="16" coveredconditionals="0" methods="14" coveredmethods="0"/>
+<coverage generated="1519325883820" clover="3.2.0">
+  <project timestamp="1519325883820" name="All files">
+    <metrics statements="37" coveredstatements="0" conditionals="18" coveredconditionals="0" methods="16" coveredmethods="0" elements="71" coveredelements="0" complexity="0" loc="37" ncloc="37" packages="1" files="1" classes="1">
+      <file name="main.js" path="/Users/joel-brubaker/Code/app-service-container/src/main.js">
+        <metrics statements="37" coveredstatements="0" conditionals="18" coveredconditionals="0" methods="16" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
         <line num="6" count="0" type="stmt"/>
         <line num="7" count="0" type="stmt"/>
@@ -37,6 +37,10 @@
         <line num="142" count="0" type="cond" truecount="0" falsecount="2"/>
         <line num="143" count="0" type="stmt"/>
         <line num="146" count="0" type="stmt"/>
+        <line num="155" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="156" count="0" type="stmt"/>
+        <line num="157" count="0" type="stmt"/>
+        <line num="160" count="0" type="stmt"/>
       </file>
     </metrics>
   </project>
