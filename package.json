@@ -1,8 +1,7 @@
 {
   "name": "app-service-container",
-  "version": "0.0.1",
-  "description":
-    "A smart container for registering and resolving services with a single page application.",
+  "version": "0.0.2",
+  "description": "A smart container for registering and resolving services with a single page application.",
   "main": "dist/app-service-container.cjs.js",
   "module": "dist/app-service-container.esm.js",
   "browser": "dist/app-service-container.umd.js",
@@ -10,7 +9,11 @@
     "type": "git",
     "url": "git+https://github.com/thebrubaker/app-service-container.git"
   },
-  "keywords": ["js", "service container", "single page application"],
+  "keywords": [
+    "js",
+    "service container",
+    "single page application"
+  ],
   "author": "Joel Brubaker",
   "license": "MIT",
   "bugs": {
@@ -44,5 +47,7 @@
     "rollup-plugin-node-resolve": "^3.0.3",
     "sinon": "^4.3.0"
   },
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }
