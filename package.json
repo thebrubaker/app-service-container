@@ -1,0 +1,48 @@
+{
+  "name": "app-service-container",
+  "version": "0.0.1",
+  "description":
+    "A smart container for registering and resolving services with a single page application.",
+  "main": "dist/app-service-container.cjs.js",
+  "module": "dist/app-service-container.esm.js",
+  "browser": "dist/app-service-container.umd.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thebrubaker/app-service-container.git"
+  },
+  "keywords": ["js", "service container", "single page application"],
+  "author": "Joel Brubaker",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/thebrubaker/app-service-container/issues"
+  },
+  "homepage": "https://github.com/thebrubaker/app-service-container#readme",
+  "scripts": {
+    "lint": "eslint --ext .js src test/specs",
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest --config test/jest.conf.js --coverage",
+    "pretest": "npm run build"
+  },
+  "dependencies": {
+    "ms": "^2.1.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.22.1",
+    "babel-eslint": "^8.2.2",
+    "babel-jest": "^22.4.0",
+    "eslint": "^4.15.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-friendly-formatter": "^3.0.0",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.2.0",
+    "eslint-plugin-promise": "^3.4.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "jest": "^22.0.4",
+    "rollup": "^0.56.2",
+    "rollup-plugin-commonjs": "^8.3.0",
+    "rollup-plugin-node-resolve": "^3.0.3",
+    "sinon": "^4.3.0"
+  },
+  "files": ["dist"]
+}
