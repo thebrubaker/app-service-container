@@ -1,22 +1,105 @@
 # app-service-container
 
-This repo contains a bare-bones example of how to create a library using Rollup, including importing a module from `node_modules` and converting it from CommonJS.
-
-We're creating a library called `how-long-till-lunch`, which usefully tells us how long we have to wait until lunch, using the [ms](https://github.com/zeit/ms) package:
+This package solves the problem of code-splitting large libraries in a single page application. It's a design pattern that involves a bit more structure to how services are "loaded" into your application, but once they have been registered, it becomes trivial to access them without having to think what code-split group they belong to.
 
 ## Getting started
 
-Clone this repository and install its dependencies:
+Add this package to your project:
 
 ```bash
 yarn add app-service-container
 ```
 
-## Example
-
-The following example shows you how to register a service, register callbacks on resolving that service, and how to use the service once registered.
+Then create a new instance of the container:
 
 ```js
+import Container from 'app-service-container';
+
+const app = new Container();
+
+export default app;
+```
+
+Now we go about registering our services. Let's start with an example of a large package such as Firebase that we only want to use on our "admin" routes.
+
+```js
+import Container from 'app-service-container';
+import firebase from 'firebase';
+
+const app = new Container();
+
+app.register('firebase', async () => {
+  // This is webpack codesplitting, read more here: https://webpack.js.org/guides/code-splitting/
+  const firebase = await import('firebase');
+
+  firebase.initializeApp({
+    // ...
+  });
+
+  return firebase;
+});
+
+export default app;
+```
+
+To access our service, we would make a request for it from the container:
+
+```js
+import app from './app';
+
+// this resolves the import and registers it in the container.
+app.resolve('firebase').then(firebase => {
+  // ...
+});
+
+// you can also resolve it with a shorter syntax
+app('firebase').then(firebase => {
+  // ...
+});
+```
+
+Once the service has been resolved, it's available statically on the app container:
+
+```js
+import app from './app';
+
+// alternative access to the service
+app('firebase').then(firebase => {
+  // it's now simple to access
+  console.log(app.firebase);
+});
+```
+
+Usually you will want to connect a service with other parts of your application. You can register how it should connect in the following way:
+
+```js
+import Vue from 'vue';
+
+// Executes the callback when the service is resolved.
+app.resolved('firebase', (container, firebase) => {
+  Vue.prototype.$firebase = firebase;
+});
+```
+
+The next step would be to separate the registration of services into individual files for better organization. So for our firebase example, we would have the following structure:
+
+```
+src/
+  app/
+    bootstrap/
+      firebase.js
+    index.js
+  components/
+  routes/
+  store/
+```
+
+```js
+/* src/app/bootstrap/firebase.js */
+
+import firebase from 'firebase';
+import Vue from 'vue';
+
 /**
  * This function allows you to register how a service is loaded
  * into the application, and what setup should be done when
@@ -35,24 +118,11 @@ export default function(register, resolved) {
   register('firebase', async () => {
     const firebase = await import('firebase');
 
-    firebase.configure({
+    firebase.initializeApp({
       // ...credentials
     });
 
     return firebase;
-  });
-
-  /**
-   * If you have simple, synchronous imports that you want
-   * to register into the container, but don't really require
-   * any configuration, you can pass an object as the first
-   * argument.
-   */
-  register({
-    config: {},
-    http: axios.create(),
-    store: new Vuex.Store(),
-    router: new VueRouter(),
   });
 
   /**
@@ -61,44 +131,112 @@ export default function(register, resolved) {
    * connect your service with other services once it's
    * resolved.
    */
-  resolved('firebase', (container, firebase) => {
+  resolved('firebase', container => {
     Object.defineProperty(Vue.prototype, '$firebase', {
       get: () => container.firebase,
     });
   });
 }
+```
 
-/**
- * This is an example route where we want to make
- * sure our firebase service is resolved before
- * a user tries to log in.
- */
-const exampleRoute = {
-  path: '/login',
-  beforeEnter(to, from, next) {
-    app.resolve('firebase').then(() => {
-      next();
-    });
+```js
+/* src/app/index/js */
+
+import Container from 'app-service-container';
+import firebase from './bootstrap/firebase';
+
+const app = new Container();
+
+firebase(app.register, app.resolved);
+/* or */
+app.bootstrap(firebase);
+
+export app;
+```
+
+Now our code is easier to reason about where and how things are bootstrapped. Now let's look at why this type of design pattern would be effective in a large Single Page Application.
+
+## Example Vue Solution
+
+Imagine our application has a simple group of public pages that we want to load quickly, and only require our core services to function. We also have an admin part of our app, and when visiting these pages, we want to make sure our services are loaded and usable.
+
+The following example shows you how to register a service, register callbacks on resolving that service, and how to use the service once registered.
+
+```js
+/* app.js */
+
+app.register('firebase', async () => {
+  const firebase = await import(/* webpackChunkName: "admin" */ 'firebase');
+
+  firebase.configure({
+    // ...credentials
+  });
+
+  return firebase;
+});
+
+app.register({
+  config: {},
+  http: axios.create(),
+  store: new Vuex.Store(),
+  router: new VueRouter(),
+});
+
+app.resolved('firebase', (container, firebase) => {
+  Object.defineProperty(Vue.prototype, '$firebase', {
+    get: () => container.firebase,
+  });
+});
+```
+
+```js
+/* routes.js */
+import app from './app';
+
+export default [
+  /**
+   * This is an example route where we want to make
+   * sure our firebase service is resolved before
+   * a user tries to log in.
+   */
+  {
+    path: '/login',
+    beforeEnter(to, from, next) {
+      app.resolve('firebase').then(next);
+    },
+  },
+];
+```
+
+```js
+/* login-component.js */
+
+export default {
+  methods: {
+    /**
+     * Imagine this is a method on our LoginComponent for
+     * signing a user in. Because we know our service is
+     * resolved, and we registered how firebase should connect
+     * to Vue when resolved, we can use it within our component.
+     *
+     * @param {String} email
+     * @param {String} password
+     */
+    attemptLogin(email, password) {
+      this.$firebase
+        .auth()
+        .signInWithEmailAndPassword(email, password)
+        .then(() => {
+          this.$router.push('/admin/dashboard');
+        });
+    },
   },
 };
-
-/**
- * Imagine this is a method on our LoginComponent for
- * signing a user in. Because we know our service is
- * resolved, and we registered how firebase should connect
- * to Vue when resolved, we can use it within our component.
- *
- * @param {String} email
- * @param {String} password
- */
-function attemptLogin(email, password) {
-  const auth = this.$firebase.auth();
-
-  auth.signInWithEmailAndPassword(email, password).then(() => {
-    this.$router.push('/admin/dashboard');
-  });
-}
 ```
+
+So to recap the steps involved, we registered our service in the container (including which code chunk it would belong to), registered a callback for how the service should connect with our other packages when resolved, registered that we wanted to resolve our service when hitting a route where the service is needed, and then used the service directly in our component.
+
+Once you register all of your application's core services, you can stop thinking about code splitting and just use them as you are building out features.
 
 ## License
 
