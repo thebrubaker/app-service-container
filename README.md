@@ -184,21 +184,42 @@ The following example shows you how to register a service, register callbacks on
 ```js
 /* app.js */
 
-app.register('firebase', async () => {
-  const firebase = await import(/* webpackChunkName: "admin" */ 'firebase');
+import Container from 'app-service-container';
+import Vue from 'vue';
+import VueRouter from 'vue-router';
+import Vuex from 'vuex';
+import firebase from 'firebase';
 
-  firebase.configure({
-    // ...credentials
-  });
+const app = new Container();
 
-  return firebase;
+const router = new VueRouter({
+  /* ... */
+});
+
+const store = new Vuex.Store({
+  /* ... */
+});
+
+const vue = new Vue({
+  el: '#app',
+  router,
+  store,
 });
 
 app.register({
-  config: {},
-  http: axios.create(),
-  store: new Vuex.Store(),
-  router: new VueRouter(),
+  vue,
+  router,
+  store,
+});
+
+app.register('firebase', async () => {
+  const firebase = await import(/* webpackChunkName: "admin" */ 'firebase');
+
+  firebase.initializeApp({
+    // ...
+  });
+
+  return firebase;
 });
 
 app.resolved('firebase', (container, firebase) => {
@@ -206,6 +227,8 @@ app.resolved('firebase', (container, firebase) => {
     get: () => container.firebase,
   });
 });
+
+export default app;
 ```
 
 ```js
