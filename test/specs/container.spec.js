@@ -10,25 +10,7 @@ const Container = require('../../');
  * that service.
  */
 describe('Container', () => {
-  it('should register a synchronous service', () => {
-    /**
-     * Foo is a new service we want to register. It returns
-     * the very important string "bar". Synchronous services
-     * can be passed in as an argument on creating the container.
-     */
-    const app = new Container();
-
-    app.register({
-      foo: () => 'bar',
-    });
-
-    // We access the service by simply getting it as a prop off of app.
-    const result = app.foo();
-
-    expect(result).toEqual('bar');
-  });
-
-  it('should register an asynchronous service', async done => {
+  it('should register a service', async done => {
     const app = new Container();
     const service = () => 'bar';
 
@@ -50,21 +32,17 @@ describe('Container', () => {
     const service = () => 'bar';
 
     app.register('foo', async () => {
-      const foo = await Promise.resolve(service);
-
-      return foo;
+      return service;
     });
 
-    app.resolved('foo', (container, foo) => {
+    app.resolved('foo', container => {
       spy1();
       expect(container.foo).toBe(service);
-      expect(foo).toBe(service);
     });
 
-    app.resolved('foo', (container, foo) => {
+    app.resolved('foo', container => {
       spy2();
       expect(container.foo).toBe(service);
-      expect(foo).toBe(service);
     });
 
     expect(spy1).not.toBeCalled;
@@ -79,13 +57,13 @@ describe('Container', () => {
     done();
   });
 
-  it('should bootstrap a service', () => {
+  it('should bootstrap a service', async done => {
     const app = new Container();
     const registered = sinon.spy();
     const resolved = sinon.spy();
 
-    const bootstrapper = (register, resolved) => {
-      register('foo', () => {
+    const bootstrapper = ({register, resolved}) => {
+      register('foo', async () => {
         registered();
         return () => 'bar';
       });
@@ -98,5 +76,38 @@ describe('Container', () => {
 
     expect(registered).toBeCalled;
     expect(resolved).toBeCalled;
+
+    done();
+  });
+
+  it('should register groups', async done => {
+    const app = new Container();
+    const fooRegistered = sinon.spy();
+    const barRegistered = sinon.spy();
+    const resolved = sinon.spy();
+
+    const bootstrapper = ({ register, resolved }) => {
+      register('foo', async () => {
+        fooRegistered();
+        return () => 'bar';
+      });
+      register('bar', async () => {
+        barRegistered();
+        return () => 'bar';
+      });
+      register('admin', ['foo', 'bar']);
+      resolved('admin', () => {
+        resolved();
+      });
+    };
+
+    app.bootstrap(bootstrapper);
+
+    await app.resolve('admin');
+
+    expect(fooRegistered).toBeCalled;
+    expect(barRegistered).toBeCalled;
+    expect(resolved).toBeCalled;
+    done();
   });
 });

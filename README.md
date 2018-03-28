@@ -83,11 +83,9 @@ const vue = new Vue({
   store,
 });
 
-app.register({
-  vue,
-  router,
-  store,
-});
+app.register('vue', async () => vue);
+app.register('router', async () => router);
+app.register('store', async () => store);
 ```
 
 Usually you will want to connect a service with other parts of your application. You can register how it should connect in the following way:
@@ -96,8 +94,8 @@ Usually you will want to connect a service with other parts of your application.
 import Vue from 'vue';
 
 // Executes the callback when the service is resolved.
-app.resolved('firebase', (container, firebase) => {
-  Vue.prototype.$firebase = firebase;
+app.resolved('firebase', (container) => {
+  Vue.prototype.$firebase = container.firebase;
 });
 ```
 
@@ -128,7 +126,7 @@ import Vue from 'vue';
  * @param {Function} register
  * @param {Function} resolved
  */
-export default function(register, resolved) {
+export default function({ register, resolved }) {
   /**
    * Register your service into the container. This is where
    * you might declare a service to be loaded asynchronously
@@ -166,8 +164,6 @@ import firebase from './bootstrap/firebase';
 
 const app = new Container();
 
-firebase(app.register, app.resolved);
-/* or */
 app.bootstrap(firebase);
 
 export app;
@@ -207,9 +203,9 @@ const vue = new Vue({
 });
 
 app.register({
-  vue,
-  router,
-  store,
+  vue: async () => vue,
+  router: async () => router,
+  store: async () => store,
 });
 
 app.register('firebase', async () => {
@@ -222,7 +218,7 @@ app.register('firebase', async () => {
   return firebase;
 });
 
-app.resolved('firebase', (container, firebase) => {
+app.resolved('firebase', (container) => {
   Object.defineProperty(Vue.prototype, '$firebase', {
     get: () => container.firebase,
   });

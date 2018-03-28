@@ -20,7 +20,7 @@ module.exports = class Container {
    * @param {Array} argumentsList
    */
   apply(target, thisArg, argumentsList) {
-    return this.resolveAsyncService(...argumentsList);
+    return this.resolve(...argumentsList);
   }
 
   /**
@@ -53,13 +53,45 @@ module.exports = class Container {
    * @param {Function} resolver 
    */
   register(name, resolver) {
-    if (typeof name === 'string') {
-      return this.registerAsyncService(name, resolver)
+    this.serviceResolvers[name] = resolver;
+    this.resolverCallbacks[name] = [];
+  }
+
+  /**
+   * Resolve a service from the container.
+   * @param {String} name 
+   * @returns {Promise}
+   */
+  async resolve(name) {
+    if (this.isGroup(name)) {
+      return this.callGroupResolvers(name);
     }
 
-    Object.keys(name).forEach(key => {
-      this.registerService(key, name[key]);
-    });
+    if (!this.isResolved(name)) {
+      await this.callServiceResolver(name);
+    }
+    
+    return this.getResolvedService(name);
+  }
+
+  /**
+   * Resolve all the services in a group.
+   * @param {String} name 
+   */
+  async callGroupResolvers(name) {
+    await Promise.all(this.serviceResolvers[name].map(serviceName => {
+      return this.resolve(serviceName);
+    }));
+
+    return this.resolvedServices;
+  }
+
+  /**
+   * Determines if the name is in the group resolvers.
+   * @param {String} name 
+   */
+  isGroup(name) {
+    return Array.isArray(this.serviceResolvers[name]);
   }
 
   /**
@@ -68,7 +100,7 @@ module.exports = class Container {
    * @param {String} name The name of the service.
    */
   getResolvedService(name) {
-    if (this.resolvedServices[name] === undefined) {
+    if (!this.isResolved(name)) {
       throw new Error(
         `Attemping to access a service that has not been resolved: ${name}.`
       );
@@ -87,52 +119,27 @@ module.exports = class Container {
   }
 
   /**
-   * Registers a service that is already resolved. If your service
-   * is asynchronously loaded, use registerAsyncService instead.
-   * @param {String} name The name of the service.
-   * @param {Any} service The service to register.
-   */
-  registerService(name, service) {
-    this.resolvedServices[name] = service;
-  }
-
-  /**
-   * Register a new async service for the given name. The resolver should return a Promise
-   * that resolves with the service.
-   * @param {String} name The name of the service.
-   * @param {Function} resolver A function that returns a Promise with the service.
-   */
-  registerAsyncService(name, resolver) {
-    this.serviceResolvers[name] = resolver;
-  }
-
-  /**
    * Resolves an asynchronous service from the container. If the service
    * has already been resolved previously, return that service from
    * the container.
    * @param {String} name The name of the service to resolve.
    * @returns {Promise}
    */
-  async resolveAsyncService(name) {
-    if (this.isResolved(name)) {
-      return Promise.resolve(this.getResolvedService(name));
-    }
-
+  async callServiceResolver(name) {
     const resolver = this.serviceResolvers[name];
 
     if (!resolver) {
       throw new Error(
-        `No resolver for async service ${name} registered in the container.`,
+        `No resolver for service "${name}" registered in the container.`,
       );
     }
 
     const module = await resolver();
-    const service = module.default || module;
 
-    this.resolvedServices[name] = service;
-    (this.resolverCallbacks[name] || []).forEach(callback => callback(this.resolvedServices, service));
+    this.resolvedServices[name] = module.default || module;
+    this.resolverCallbacks[name].forEach(callback => callback(this.resolvedServices));
 
-    return service;
+    return this.getResolvedService(name);
   }
 
   /**
@@ -156,9 +163,15 @@ module.exports = class Container {
   bootstrap(callbacks) {
     if (Array.isArray(callbacks)) {
       return callbacks.map(callback => {
-        return callback(this.register.bind(this), this.resolved.bind(this))
+        return callback({
+          register: this.register.bind(this),
+          resolved: this.resolved.bind(this),
+        })
       })
     }
-    return callbacks(this.register.bind(this), this.resolved.bind(this))
+    return callbacks({
+      register: this.register.bind(this),
+      resolved: this.resolved.bind(this),
+    })
   }
 };
