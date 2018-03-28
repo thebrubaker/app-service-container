@@ -43,6 +43,7 @@ module.exports = class Container {
    */
   set(target, prop, value) {
     this.resolvedServices[prop] = value;
+    return value;
   }
 
   /**

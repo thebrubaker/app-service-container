@@ -110,4 +110,9 @@ describe('Container', () => {
     expect(resolved).toBeCalled;
     done();
   });
+  it('should register a service through the set proxy', () => {
+    const app = new Container();
+    app.foo = () => 'bar';
+    expect(app.foo()).toEqual('bar');
+  });
 });
