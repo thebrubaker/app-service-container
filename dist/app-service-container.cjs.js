@@ -44,7 +44,7 @@ module.exports = class Container {
    * @param {Any} value
    */
   set(target, prop, value) {
-    this.registerService(prop, value);
+    this.resolvedServices[prop] = value;
   }
 
   /**
