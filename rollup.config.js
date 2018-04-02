@@ -2,6 +2,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import pkg from './package.json';
 import babel from 'rollup-plugin-babel';
+import async from 'rollup-plugin-async';
 
 export default [
 	// browser-friendly UMD build
@@ -17,15 +18,10 @@ export default [
 				babelrc: false,
 				exclude: 'node_modules/**',
 				presets: [
-					['env', {
-						modules: false,
-						targets: {
-							browsers: ["> 1%", "last 2 versions", "not ie <= 8"]
-						}
-					}],
 					'stage-2',
 				],
 			}),
+			async(),			
 			resolve(), // so Rollup can find `ms`
 			commonjs(), // so Rollup can convert `ms` to an ES module
 		]

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1522710120237" clover="3.2.0">
-  <project timestamp="1522710120237" name="All files">
+<coverage generated="1522711235167" clover="3.2.0">
+  <project timestamp="1522711235167" name="All files">
     <metrics statements="57" coveredstatements="0" conditionals="34" coveredconditionals="0" methods="20" coveredmethods="0" elements="111" coveredelements="0" complexity="0" loc="57" ncloc="57" packages="1" files="1" classes="1">
       <file name="main.js" path="/Users/joel-brubaker/Code/app-service-container/src/main.js">
         <metrics statements="57" coveredstatements="0" conditionals="34" coveredconditionals="0" methods="20" coveredmethods="0"/>
