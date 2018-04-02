@@ -1,6 +1,10 @@
 const sinon = require('sinon');
 const Container = require('../../');
 
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
  * The Container manages how services are loaded and accessed. Example services would be
  * firebase, axios, auth0 or any other large package that the app uses. With
@@ -27,32 +31,32 @@ describe('Container', () => {
 
   it('should fire callbacks when a service is resolved', async done => {
     const app = new Container();
-    const spy1 = sinon.spy();
-    const spy2 = sinon.spy();
+    const fooResolved1 = sinon.spy();
+    const fooResolved2 = sinon.spy();
     const service = () => 'bar';
 
     app.register('foo', async () => {
       return service;
     });
 
-    app.resolved('foo', container => {
-      spy1();
-      expect(container.foo).toBe(service);
+    app.resolved('foo', app => {
+      fooResolved1();
+      expect(app.foo).toBe(service);
     });
 
-    app.resolved('foo', container => {
-      spy2();
-      expect(container.foo).toBe(service);
+    app.resolved('foo', app => {
+      fooResolved2();
+      expect(app.foo).toBe(service);
     });
 
-    expect(spy1).not.toBeCalled;
-    expect(spy2).not.toBeCalled;
+    expect(fooResolved1).not.toBeCalled;
+    expect(fooResolved2).not.toBeCalled;
 
     const foo = await app('foo');
 
     expect(foo()).toEqual('bar');
-    expect(spy1).toBeCalled;
-    expect(spy2).toBeCalled;
+    expect(fooResolved1).toBeCalled;
+    expect(fooResolved2).toBeCalled;
 
     done();
   });
@@ -90,12 +94,13 @@ describe('Container', () => {
       register('foo', async () => {
         fooRegistered();
         return () => 'bar';
-      });
+      }).addToGroup('admin');
+
       register('bar', async () => {
         barRegistered();
         return () => 'bar';
-      });
-      register('admin', ['foo', 'bar']);
+      }).addToGroup('admin');
+
       resolved('admin', () => {
         resolved();
       });
@@ -110,9 +115,44 @@ describe('Container', () => {
     expect(resolved).toBeCalled;
     done();
   });
-  it('should register a service through the set proxy', () => {
+
+  it('should register dependencies and resolve the tree', async done => {
+    const foo = sinon.spy();
+    const fooResolved = sinon.spy();
+    const bar = sinon.spy();
+    const barResolved = sinon.spy();    
+    const baz = sinon.spy();
+    const bazResolved = sinon.spy();
+    const fuzz = sinon.spy();
+    const fuzzResolved = sinon.spy();
+    
     const app = new Container();
-    app.foo = () => 'bar';
-    expect(app.foo()).toEqual('bar');
+    app.register('foo', ['bar', 'baz'], async app => {
+      fooResolved();
+      expect(app.bar).toBeDefined;
+      expect(app.baz).toBeDefined;
+      return foo;
+    });
+    app.register('bar', ['fuzz'], async app => {
+      barResolved();
+      expect(app.fuzz).toBeDefined;
+      return bar;
+    });
+    app.register('baz', async () => {
+      timeout(300);
+      bazResolved();
+      return baz;
+    });
+    app.register('fuzz', ['baz'], async app => {
+      fuzzResolved();
+      expect(app.baz).toBeDefined;
+      return fuzz;
+    });
+    await app('foo');
+    expect(fooResolved).toBeCalled;
+    expect(barResolved).toBeCalled;
+    expect(bazResolved).toBeCalled;
+    expect(fuzzResolved).toBeCalled;
+    done();
   });
 });

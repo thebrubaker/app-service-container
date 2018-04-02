@@ -1,13 +1,41 @@
 'use strict';
 
-module.exports = class Container {
+module.exports = class Container
+{
   /** 
    * The constructor for the container.
    */
-  constructor() {
+  constructor(config = {}) {
+    this.options = {
+      ...config,
+    };
+
+    /**
+     * The resolver functions for each service.
+     */
     this.serviceResolvers = {};
+
+    /**
+     * The resolver functions for each service.
+     */
+    this.serviceGroups = {};
+
+    /**
+     * Services that have been resolved and are accessible from
+     * the container.
+     */
     this.resolvedServices = {};
+
+    /**
+     * The callbacks for each service to be called when the
+     * service is resolved.
+     */
     this.resolverCallbacks = {};
+
+    /**
+     * The dependency tree for registered services.
+     */
+    this.dependencyTree = {};
 
     return new Proxy(() => {}, this);
   }
@@ -30,6 +58,10 @@ module.exports = class Container {
    * @param {Container} receiver
    */
   get(target, prop, receiver) {
+    if (prop === 'config') {
+      return this.options.config;
+    }
+
     if (this[prop] !== undefined) {
       return this[prop];
     }
@@ -38,24 +70,78 @@ module.exports = class Container {
   }
 
   /**
-   * Sets a resolved service on the container.
-   * @param {Container} target
-   * @param {String} prop
-   * @param {Any} value
+   * Register a service in the container.
+   * @param {String|Object} name 
+   * @param {Array} dependencies 
+   * @param {Function} resolver 
    */
-  set(target, prop, value) {
-    this.resolvedServices[prop] = value;
-    return value;
+  register(name, dependencies, resolver = null) {
+    const config = {
+      name: name,
+      dependencies: resolver ? dependencies : [],
+      resolver: resolver ? resolver : dependencies,
+    };
+
+    this.dependencyTree[config.name] = config.dependencies;
+    this.serviceResolvers[config.name] = config.resolver;
+    this.resolverCallbacks[config.name] = [];
+    
+    return {
+      addToGroup: (groupName) => {
+        this.addToGroup(groupName, config.name);
+      }
+    }
   }
 
   /**
-   * Register a service in the container.
-   * @param {String|Object} name 
-   * @param {Function} resolver 
+   * Register a callback to be executed when a service is first resolved.
+   * @param {String} name The name of the service.
+   * @param {Function} callback The callback.
    */
-  register(name, resolver) {
-    this.serviceResolvers[name] = resolver;
-    this.resolverCallbacks[name] = [];
+  resolved(name, callback) {
+    if (this.resolverCallbacks[name] === undefined) {
+      this.resolverCallbacks[name] = [];
+    }
+
+    this.resolverCallbacks[name].push(callback);
+  }
+
+  /**
+   * Bootstrap a service using a callback or callbacks.
+   * 
+   * @param {Array|Function} callbacks
+   */
+  bootstrap(callbacks) {
+    if (!Array.isArray(callbacks)) {
+      callbacks = [callbacks];
+    }
+
+    callbacks.forEach(callback => {
+      callback({
+        register: this.register.bind(this),
+        resolved: this.resolved.bind(this),
+      });
+    });
+  }
+
+  /**
+   * Add a service to a group.
+   * @param {String} groupName 
+   * @param {String} serviceName 
+   */
+  addToGroup(groupName, serviceName) {
+    if (this.isGroup(serviceName)) {
+      throw new Error(`Service is already registered as a group: ${serviceName}`)
+    }
+
+    if (this.isGroup(groupName) && this.serviceGroups[groupName].indexOf(serviceName)) {
+      return;
+    }
+
+    this.serviceGroups[groupName] = [
+      ...(this.serviceGroups[groupName] || []),
+      serviceName,
+    ];
   }
 
   /**
@@ -79,12 +165,12 @@ module.exports = class Container {
    * Resolve all the services in a group.
    * @param {String} name 
    */
-  async callGroupResolvers(name) {
-    await Promise.all(this.serviceResolvers[name].map(serviceName => {
-      return this.resolve(serviceName);
-    }));
+  async callGroupResolvers(groupName) {
+    for (let name of this.serviceGroups[groupName]) {
+      await this.resolve(name);
+    }
 
-    return this.resolvedServices;
+    return this;
   }
 
   /**
@@ -92,7 +178,7 @@ module.exports = class Container {
    * @param {String} name 
    */
   isGroup(name) {
-    return Array.isArray(this.serviceResolvers[name]);
+    return this.serviceGroups[name] !== undefined;
   }
 
   /**
@@ -102,9 +188,7 @@ module.exports = class Container {
    */
   getResolvedService(name) {
     if (!this.isResolved(name)) {
-      throw new Error(
-        `Attemping to access a service that has not been resolved: ${name}.`
-      );
+      return undefined;
     }
 
     return this.resolvedServices[name];
@@ -127,6 +211,20 @@ module.exports = class Container {
    * @returns {Promise}
    */
   async callServiceResolver(name) {
+    const service = await this.resolveDependencyTree(name);
+
+    this.resolvedServices[name] = service;
+
+    this.resolverCallbacks[name].forEach(callback => callback(new Proxy(() => {}, this)));
+
+    return this.getResolvedService(name);
+  }
+
+  /**
+   * Resolve the dependency tree for the given service.
+   * @param {String} name 
+   */
+  async resolveDependencyTree(name) {
     const resolver = this.serviceResolvers[name];
 
     if (!resolver) {
@@ -135,44 +233,14 @@ module.exports = class Container {
       );
     }
 
-    const module = await resolver();
+    const dependencies = this.dependencyTree[name] || [];
 
-    this.resolvedServices[name] = module.default || module;
-    this.resolverCallbacks[name].forEach(callback => callback(this.resolvedServices));
-
-    return this.getResolvedService(name);
-  }
-
-  /**
-   * Register a callback to be executed when a service is first resolved.
-   * @param {String} name The name of the service.
-   * @param {Function} callback The callback.
-   */
-  resolved(name, callback) {
-    if (this.resolverCallbacks[name] === undefined) {
-      this.resolverCallbacks[name] = [];
+    for (let service of dependencies) {
+      await this.resolve(service);
     }
 
-    this.resolverCallbacks[name].push(callback);
-  }
+    const module = await resolver(new Proxy(() => {}, this));
 
-  /**
-   * Bootstrap a service using a callback or callbacks.
-   * 
-   * @param {Array|Function} callbacks
-   */
-  bootstrap(callbacks) {
-    if (Array.isArray(callbacks)) {
-      return callbacks.map(callback => {
-        return callback({
-          register: this.register.bind(this),
-          resolved: this.resolved.bind(this),
-        })
-      })
-    }
-    return callbacks({
-      register: this.register.bind(this),
-      resolved: this.resolved.bind(this),
-    })
+    return module.default || module;
   }
 };
