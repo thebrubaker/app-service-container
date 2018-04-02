@@ -1,6 +1,6 @@
 {
   "name": "app-service-container",
-  "version": "2.1.2",
+  "version": "3.0.0",
   "description": "A smart container for registering and resolving services with a single page application.",
   "main": "dist/app-service-container.cjs.js",
   "module": "dist/app-service-container.esm.js",
