@@ -31,7 +31,7 @@ var main = function () {
     this.serviceResolvers = {};
 
     /**
-     * The resolver functions for each service.
+     * The services that should be resolved together.
      */
     this.serviceGroups = {};
 
@@ -43,7 +43,7 @@ var main = function () {
 
     /**
      * The callbacks for each service to be called when the
-     * service is resolved.
+     * service is first resolved.
      */
     this.resolverCallbacks = {};
 
