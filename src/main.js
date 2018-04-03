@@ -141,7 +141,7 @@ module.exports = class Container {
   addToGroup(groupName, serviceName) {
     if (!this.isGroup(groupName)) {
       this.serviceGroups[groupName] = [];
-      this.serviceResolvers[groupName] = [];
+      this.resolverCallbacks[groupName] = [];
     }
 
     if (this.serviceGroups[groupName].includes(serviceName)) {
