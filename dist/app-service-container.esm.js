@@ -1,12 +1,9 @@
-module.exports = class Container
-{
-  /** 
+module.exports = class Container {
+  /**
    * The constructor for the container.
    */
   constructor(config = {}) {
-    this.options = {
-      ...config,
-    };
+    this.options = {};
 
     /**
      * The resolver functions for each service.
@@ -35,6 +32,8 @@ module.exports = class Container
      */
     this.dependencyTree = {};
 
+    this.options.config = config;
+
     return new Proxy(() => {}, this);
   }
 
@@ -47,6 +46,18 @@ module.exports = class Container
    */
   apply(target, thisArg, argumentsList) {
     return this.resolve(...argumentsList);
+  }
+
+  /**
+   * The container is just a proxy to our registered services.
+   * @param {Container} target
+   * @param {String} prop
+   * @param {mixed} value
+   */
+  set(target, prop, value) {
+    this.options[prop] = value;
+
+    return value;
   }
 
   /**
@@ -69,9 +80,9 @@ module.exports = class Container
 
   /**
    * Register a service in the container.
-   * @param {String|Object} name 
-   * @param {Array} dependencies 
-   * @param {Function} resolver 
+   * @param {String|Object} name
+   * @param {Array} dependencies
+   * @param {Function} resolver
    */
   register(name, dependencies, resolver = null) {
     const config = {
@@ -83,12 +94,12 @@ module.exports = class Container
     this.dependencyTree[config.name] = config.dependencies;
     this.serviceResolvers[config.name] = config.resolver;
     this.resolverCallbacks[config.name] = [];
-    
+
     return {
-      addToGroup: (groupName) => {
+      addToGroup: groupName => {
         this.addToGroup(groupName, config.name);
-      }
-    }
+      },
+    };
   }
 
   /**
@@ -106,7 +117,7 @@ module.exports = class Container
 
   /**
    * Bootstrap a service using a callback or callbacks.
-   * 
+   *
    * @param {Array|Function} callbacks
    */
   bootstrap(callbacks) {
@@ -124,12 +135,13 @@ module.exports = class Container
 
   /**
    * Add a service to a group.
-   * @param {String} groupName 
-   * @param {String} serviceName 
+   * @param {String} groupName
+   * @param {String} serviceName
    */
   addToGroup(groupName, serviceName) {
     if (!this.isGroup(groupName)) {
       this.serviceGroups[groupName] = [];
+      this.serviceResolvers[groupName] = [];
     }
 
     if (this.serviceGroups[groupName].includes(serviceName)) {
@@ -144,7 +156,7 @@ module.exports = class Container
 
   /**
    * Resolve a service from the container.
-   * @param {String} name 
+   * @param {String} name
    * @returns {Promise}
    */
   async resolve(name) {
@@ -155,25 +167,29 @@ module.exports = class Container
     if (!this.isResolved(name)) {
       await this.callServiceResolver(name);
     }
-    
+
     return this.getResolvedService(name);
   }
 
   /**
    * Resolve all the services in a group.
-   * @param {String} name 
+   * @param {String} name
    */
   async callGroupResolvers(groupName) {
     for (let name of this.serviceGroups[groupName]) {
       await this.resolve(name);
     }
 
+    this.resolverCallbacks[groupName].forEach(callback =>
+      callback(new Proxy(() => {}, this)),
+    );
+
     return this;
   }
 
   /**
    * Determines if the name is in the group resolvers.
-   * @param {String} name 
+   * @param {String} name
    */
   isGroup(name) {
     return this.serviceGroups[name] !== undefined;
@@ -213,14 +229,16 @@ module.exports = class Container
 
     this.resolvedServices[name] = service;
 
-    this.resolverCallbacks[name].forEach(callback => callback(new Proxy(() => {}, this)));
+    this.resolverCallbacks[name].forEach(callback =>
+      callback(new Proxy(() => {}, this)),
+    );
 
     return this.getResolvedService(name);
   }
 
   /**
    * Resolve the dependency tree for the given service.
-   * @param {String} name 
+   * @param {String} name
    */
   async resolveDependencyTree(name) {
     const resolver = this.serviceResolvers[name];

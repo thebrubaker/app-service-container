@@ -4,16 +4,14 @@
 	(global.AppServiceContainer = factory());
 }(this, (function () { 'use strict';
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
 
 var main = class Container {
-  /** 
+  /**
    * The constructor for the container.
    */
   constructor(config = {}) {
-    this.options = _extends({}, config);
+    this.options = {};
 
     /**
      * The resolver functions for each service.
@@ -42,6 +40,8 @@ var main = class Container {
      */
     this.dependencyTree = {};
 
+    this.options.config = config;
+
     return new Proxy(() => {}, this);
   }
 
@@ -54,6 +54,18 @@ var main = class Container {
    */
   apply(target, thisArg, argumentsList) {
     return this.resolve(...argumentsList);
+  }
+
+  /**
+   * The container is just a proxy to our registered services.
+   * @param {Container} target
+   * @param {String} prop
+   * @param {mixed} value
+   */
+  set(target, prop, value) {
+    this.options[prop] = value;
+
+    return value;
   }
 
   /**
@@ -76,9 +88,9 @@ var main = class Container {
 
   /**
    * Register a service in the container.
-   * @param {String|Object} name 
-   * @param {Array} dependencies 
-   * @param {Function} resolver 
+   * @param {String|Object} name
+   * @param {Array} dependencies
+   * @param {Function} resolver
    */
   register(name, dependencies, resolver = null) {
     const config = {
@@ -113,7 +125,7 @@ var main = class Container {
 
   /**
    * Bootstrap a service using a callback or callbacks.
-   * 
+   *
    * @param {Array|Function} callbacks
    */
   bootstrap(callbacks) {
@@ -131,12 +143,13 @@ var main = class Container {
 
   /**
    * Add a service to a group.
-   * @param {String} groupName 
-   * @param {String} serviceName 
+   * @param {String} groupName
+   * @param {String} serviceName
    */
   addToGroup(groupName, serviceName) {
     if (!this.isGroup(groupName)) {
       this.serviceGroups[groupName] = [];
+      this.serviceResolvers[groupName] = [];
     }
 
     if (this.serviceGroups[groupName].includes(serviceName)) {
@@ -148,7 +161,7 @@ var main = class Container {
 
   /**
    * Resolve a service from the container.
-   * @param {String} name 
+   * @param {String} name
    * @returns {Promise}
    */
   resolve(name) {
@@ -169,7 +182,7 @@ var main = class Container {
 
   /**
    * Resolve all the services in a group.
-   * @param {String} name 
+   * @param {String} name
    */
   callGroupResolvers(groupName) {
     var _this2 = this;
@@ -179,13 +192,17 @@ var main = class Container {
         yield _this2.resolve(name);
       }
 
+      _this2.resolverCallbacks[groupName].forEach(function (callback) {
+        return callback(new Proxy(function () {}, _this2));
+      });
+
       return _this2;
     })();
   }
 
   /**
    * Determines if the name is in the group resolvers.
-   * @param {String} name 
+   * @param {String} name
    */
   isGroup(name) {
     return this.serviceGroups[name] !== undefined;
@@ -238,7 +255,7 @@ var main = class Container {
 
   /**
    * Resolve the dependency tree for the given service.
-   * @param {String} name 
+   * @param {String} name
    */
   resolveDependencyTree(name) {
     var _this4 = this;

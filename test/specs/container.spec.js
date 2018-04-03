@@ -15,7 +15,8 @@ function timeout(ms) {
  */
 describe('Container', () => {
   it('should register a service', async done => {
-    const app = new Container();
+    const config = {};
+    const app = new Container(config);
     const service = () => 'bar';
 
     app.register('foo', async () => {
@@ -24,7 +25,11 @@ describe('Container', () => {
 
     const foo = await app('foo');
 
+    app.debug = true;
+
     expect(foo()).toEqual('bar');
+    expect(app.config).toEqual(config);
+    expect(app.options.debug).toEqual(true);
 
     done();
   });
@@ -93,6 +98,11 @@ describe('Container', () => {
     const wasResolved = jest.fn();
 
     const bootstrapper = ({ register, resolved }) => {
+      register('foo', async () => {
+        fooRegistered();
+        return () => 'bar';
+      }).addToGroup('admin');
+
       register('foo', async () => {
         fooRegistered();
         return () => 'bar';
