@@ -1,5 +1,5 @@
 const sinon = require('sinon');
-const Container = require('../../');
+const Container = require('../../src/main');
 
 function timeout(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -31,8 +31,8 @@ describe('Container', () => {
 
   it('should fire callbacks when a service is resolved', async done => {
     const app = new Container();
-    const fooResolved1 = sinon.spy();
-    const fooResolved2 = sinon.spy();
+    const fooResolved1 = jest.fn();
+    const fooResolved2 = jest.fn();
     const service = () => 'bar';
 
     app.register('foo', async () => {
@@ -49,46 +49,48 @@ describe('Container', () => {
       expect(app.foo).toBe(service);
     });
 
-    expect(fooResolved1).not.toBeCalled;
-    expect(fooResolved2).not.toBeCalled;
+    expect(fooResolved1).not.toBeCalled();
+    expect(fooResolved2).not.toBeCalled();
 
     const foo = await app('foo');
 
     expect(foo()).toEqual('bar');
-    expect(fooResolved1).toBeCalled;
-    expect(fooResolved2).toBeCalled;
+    expect(fooResolved1).toBeCalled();
+    expect(fooResolved2).toBeCalled();
 
     done();
   });
 
   it('should bootstrap a service', async done => {
     const app = new Container();
-    const registered = sinon.spy();
-    const resolved = sinon.spy();
+    const wasRegistered = jest.fn();
+    const wasResolved = jest.fn();
 
     const bootstrapper = ({register, resolved}) => {
       register('foo', async () => {
-        registered();
+        wasRegistered();
         return () => 'bar';
       });
       resolved('foo', () => {
-        resolved();
+        wasResolved();
       });
     };
 
     app.bootstrap(bootstrapper);
 
-    expect(registered).toBeCalled;
-    expect(resolved).toBeCalled;
+    await app('foo');
+
+    expect(wasRegistered).toBeCalled();
+    expect(wasResolved).toBeCalled();
 
     done();
   });
 
   it('should register groups', async done => {
     const app = new Container();
-    const fooRegistered = sinon.spy();
-    const barRegistered = sinon.spy();
-    const resolved = sinon.spy();
+    const fooRegistered = jest.fn();
+    const barRegistered = jest.fn();
+    const wasResolved = jest.fn();
 
     const bootstrapper = ({ register, resolved }) => {
       register('foo', async () => {
@@ -102,29 +104,31 @@ describe('Container', () => {
       }).addToGroup('admin');
 
       resolved('admin', () => {
-        resolved();
+        wasResolved();
       });
     };
 
     app.bootstrap(bootstrapper);
 
+    expect(app.serviceGroups.admin).toEqual(expect.arrayContaining(['foo', 'bar']));
+
     await app.resolve('admin');
 
-    expect(fooRegistered).toBeCalled;
-    expect(barRegistered).toBeCalled;
-    expect(resolved).toBeCalled;
+    expect(fooRegistered).toBeCalled();
+    expect(barRegistered).toBeCalled();
+    expect(wasResolved).toBeCalled();
     done();
   });
 
   it('should register dependencies and resolve the tree', async done => {
-    const foo = sinon.spy();
-    const fooResolved = sinon.spy();
-    const bar = sinon.spy();
-    const barResolved = sinon.spy();    
-    const baz = sinon.spy();
-    const bazResolved = sinon.spy();
-    const fuzz = sinon.spy();
-    const fuzzResolved = sinon.spy();
+    const foo = jest.fn();
+    const fooResolved = jest.fn();
+    const bar = jest.fn();
+    const barResolved = jest.fn();    
+    const baz = jest.fn();
+    const bazResolved = jest.fn();
+    const fuzz = jest.fn();
+    const fuzzResolved = jest.fn();
     
     const app = new Container();
     app.register('foo', ['bar', 'baz'], async app => {
@@ -149,10 +153,10 @@ describe('Container', () => {
       return fuzz;
     });
     await app('foo');
-    expect(fooResolved).toBeCalled;
-    expect(barResolved).toBeCalled;
-    expect(bazResolved).toBeCalled;
-    expect(fuzzResolved).toBeCalled;
+    expect(fooResolved).toBeCalled();
+    expect(barResolved).toBeCalled();
+    expect(bazResolved).toBeCalled();
+    expect(fuzzResolved).toBeCalled();
     done();
   });
 });

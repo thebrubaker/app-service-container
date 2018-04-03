@@ -135,15 +135,15 @@ var main = class Container {
    * @param {String} serviceName 
    */
   addToGroup(groupName, serviceName) {
-    if (this.isGroup(serviceName)) {
-      throw new Error(`Service is already registered as a group: ${serviceName}`);
+    if (!this.isGroup(groupName)) {
+      this.serviceGroups[groupName] = [];
     }
 
-    if (this.isGroup(groupName) && this.serviceGroups[groupName].indexOf(serviceName)) {
+    if (this.serviceGroups[groupName].includes(serviceName)) {
       return;
     }
 
-    this.serviceGroups[groupName] = [...(this.serviceGroups[groupName] || []), serviceName];
+    this.serviceGroups[groupName] = [...this.serviceGroups[groupName], serviceName];
   }
 
   /**
